@@ -85,3 +85,45 @@ func groupByLabel(entries interface{}, label string) (map[string][]interface{}, 
 		groups[value.(string)] = append(groups[value.(string)], v)
 	})
 }
+
+// splitKeyValuePairs splits a input string into a map of key value pairs, first string is split by listSep into list items, then each list item is split by kvpSep into key value pair
+// if a list item does not contai the kvpSep a defaultKey can be provided, where these values are grouped, or if omitted these values are used as key and value
+func splitKeyValuePairs(input string, listSep string, kvpSep string, defaultKey ...string) map[string]string {
+	keyValuePairs := strings.Split(input, listSep)
+
+	output := map[string]string{}
+	for _, kvp := range keyValuePairs {
+		var key string
+		var value string
+		if strings.Contains(kvp, kvpSep) {
+			splitted := strings.Split(kvp, kvpSep)
+			key = splitted[0]
+			value = splitted[1]
+		} else if len(defaultKey) == 0 || defaultKey[0] == "" {
+			// no key found, no default key specified
+			key = kvp
+			value = kvp
+		} else {
+			// no key found, use default key specified instead
+			key = defaultKey[0]
+			value = kvp
+		}
+
+		output[key] = value
+	}
+
+	return output
+}
+
+// groupByMultiKeyValuePairs similar to groupByMulti, but the key value ist split into a list (delimited by listSep) of key value pairs (seperated by kvpSep: <key>kvpSep<value, e.g key1=value1>)
+// An array or slice entry will show up in the output map under all of the list key value pair keys
+func groupByMultiKeyValuePairs(entries interface{}, key, listSep string, kvpSep string, defaultKey string) (map[string][]interface{}, error) {
+	return generalizedGroupByKey("groupByMultiKeyValuePairs", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+
+		keyValuePairs := splitKeyValuePairs(value.(string), listSep, kvpSep, defaultKey)
+		for key := range keyValuePairs {
+			groups[key] = append(groups[key], v)
+		}
+	})
+}
+
